@@ -336,6 +336,125 @@ const cacheManager = new CacheManager();
 const gardenState = new GardenState();
 
 // ============================================
+// CACTUS REVIEWS & METADATA SYSTEM
+// ============================================
+
+class CactusMetadata {
+    constructor() {
+        this.storage = {
+            key: 'cacto-metadata-v1'
+        };
+        this.metadata = new Map();
+        this.load();
+    }
+
+    // Load metadata from localStorage
+    load() {
+        try {
+            const stored = localStorage.getItem(this.storage.key);
+            if (stored) {
+                const data = JSON.parse(stored);
+                this.metadata = new Map(data);
+                console.log('📝 Metadata carregado:', this.metadata.size, 'cactos com comentários');
+            }
+        } catch (e) {
+            console.warn('Failed to load metadata:', e);
+        }
+    }
+
+    // Save metadata to localStorage
+    save() {
+        try {
+            const data = Array.from(this.metadata.entries());
+            localStorage.setItem(this.storage.key, JSON.stringify(data));
+        } catch (e) {
+            console.warn('Failed to save metadata:', e);
+        }
+    }
+
+    // Get metadata for a cactus
+    getMetadata(cactusId) {
+        return this.metadata.get(String(cactusId)) || {
+            rating: 0,
+            comments: [],
+            createdAt: Date.now()
+        };
+    }
+
+    // Set rating for a cactus
+    setRating(cactusId, rating) {
+        const metadata = this.getMetadata(cactusId);
+        metadata.rating = Math.max(0, Math.min(5, rating));
+        metadata.updatedAt = Date.now();
+        this.metadata.set(String(cactusId), metadata);
+        this.save();
+        this.notifyMilestone(`⭐ Cacto avaliado com ${metadata.rating} estrelas!`);
+        return metadata;
+    }
+
+    // Add comment to a cactus
+    addComment(cactusId, comment) {
+        const metadata = this.getMetadata(cactusId);
+        const newComment = {
+            id: Date.now(),
+            text: comment,
+            createdAt: Date.now()
+        };
+        metadata.comments.push(newComment);
+        metadata.updatedAt = Date.now();
+        this.metadata.set(String(cactusId), metadata);
+        this.save();
+        this.notifyMilestone(`💬 Comentário adicionado! Total: ${metadata.comments.length} comentários`);
+        return newComment;
+    }
+
+    // Remove comment from a cactus
+    removeComment(cactusId, commentId) {
+        const metadata = this.getMetadata(cactusId);
+        metadata.comments = metadata.comments.filter(c => c.id !== commentId);
+        metadata.updatedAt = Date.now();
+        this.metadata.set(String(cactusId), metadata);
+        this.save();
+        this.notifyMilestone(`🗑️ Comentário removido`);
+    }
+
+    // Get all metadata
+    getAll() {
+        return Array.from(this.metadata.values());
+    }
+
+    // Get stats
+    getStats() {
+        const allMetadata = this.getAll();
+        const totalRatings = allMetadata.filter(m => m.rating > 0).length;
+        const totalComments = allMetadata.reduce((sum, m) => sum + m.comments.length, 0);
+        const avgRating = totalRatings > 0
+            ? (allMetadata.reduce((sum, m) => sum + m.rating, 0) / totalRatings).toFixed(1)
+            : 0;
+
+        return {
+            totalRatings,
+            totalComments,
+            avgRating
+        };
+    }
+
+    // Notify milestone reached
+    notifyMilestone(message) {
+        const event = new CustomEvent('milestone', { detail: { message } });
+        document.dispatchEvent(event);
+    }
+
+    // Clear all metadata
+    clear() {
+        this.metadata.clear();
+        localStorage.removeItem(this.storage.key);
+    }
+}
+
+const cactusMetadata = new CactusMetadata();
+
+// ============================================
 // SPECIES SELECTION
 // ============================================
 
@@ -417,10 +536,30 @@ function createCactusCard(cactusData) {
         <span class="species-scientific">${species.scientific}</span>
     `;
 
-    // Overlay with remove button
+    // Rating indicator
+    const metadata = cactusMetadata.getMetadata(id);
+    const ratingIndicator = document.createElement('div');
+    ratingIndicator.className = 'rating-indicator';
+    if (metadata.rating > 0) {
+        ratingIndicator.innerHTML = `<span class="rating-stars">${'★'.repeat(metadata.rating)}</span>`;
+    }
+
+    // Overlay with buttons
     const overlay = document.createElement('div');
     overlay.className = 'cactus-card-overlay';
 
+    // Review button (shows comments & rating)
+    const reviewBtn = document.createElement('button');
+    reviewBtn.className = 'review-btn';
+    reviewBtn.innerHTML = '💬';
+    reviewBtn.setAttribute('aria-label', 'Adicionar comentário');
+
+    reviewBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        showReviewModal(id, species);
+    });
+
+    // Remove button
     const removeBtn = document.createElement('button');
     removeBtn.className = 'remove-btn';
     removeBtn.innerHTML = `
@@ -436,15 +575,19 @@ function createCactusCard(cactusData) {
         removeCactus(card, id);
     });
 
+    overlay.appendChild(reviewBtn);
     overlay.appendChild(removeBtn);
 
     card.appendChild(imgContainer);
+    card.appendChild(ratingIndicator);
     card.appendChild(speciesLabel);
     card.appendChild(overlay);
 
-    // Click on card shows species info
-    card.addEventListener('click', () => {
-        showSpeciesInfo(species);
+    // Click on card shows species info (but not if clicking buttons)
+    card.addEventListener('click', (e) => {
+        if (!e.target.closest('button')) {
+            showSpeciesInfo(species);
+        }
     });
 
     return card;
@@ -475,6 +618,330 @@ function showSpeciesInfo(species) {
 }
 
 // ============================================
+// CACTUS REVIEW MODAL
+// ============================================
+
+function showReviewModal(cactusId, species) {
+    // Remove existing modal if any
+    const existing = document.querySelector('.review-modal-overlay');
+    if (existing) existing.remove();
+
+    const metadata = cactusMetadata.getMetadata(cactusId);
+    const currentRating = metadata.rating || 0;
+    const comments = metadata.comments || [];
+
+    // Create modal overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'review-modal-overlay';
+
+    // Create modal content
+    const modal = document.createElement('div');
+    modal.className = 'review-modal';
+
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'modal-close-btn';
+    closeBtn.innerHTML = '✕';
+    closeBtn.addEventListener('click', () => {
+        overlay.classList.add('closing');
+        setTimeout(() => overlay.remove(), 300);
+    });
+
+    // Header
+    const header = document.createElement('div');
+    header.className = 'modal-header';
+    header.innerHTML = `
+        <h2>${species.name}</h2>
+        <p class="modal-subtitle">${species.scientific}</p>
+    `;
+    header.appendChild(closeBtn);
+
+    // Rating section
+    const ratingSection = document.createElement('div');
+    ratingSection.className = 'rating-section';
+    ratingSection.innerHTML = '<h3>⭐ Avaliação</h3>';
+
+    const starsContainer = document.createElement('div');
+    starsContainer.className = 'stars-container';
+
+    for (let i = 1; i <= 5; i++) {
+        const star = document.createElement('button');
+        star.className = 'star-btn';
+        star.innerHTML = '★';
+        star.dataset.rating = i;
+        star.classList.toggle('active', i <= currentRating);
+
+        star.addEventListener('click', () => {
+            const newRating = i === currentRating ? 0 : i;
+            cactusMetadata.setRating(cactusId, newRating);
+
+            // Update stars display
+            starsContainer.querySelectorAll('.star-btn').forEach((s, idx) => {
+                s.classList.toggle('active', idx < newRating);
+            });
+        });
+
+        starsContainer.appendChild(star);
+    }
+
+    ratingSection.appendChild(starsContainer);
+
+    // Comments section
+    const commentsSection = document.createElement('div');
+    commentsSection.className = 'comments-section';
+    commentsSection.innerHTML = '<h3>💬 Comentários</h3>';
+
+    // Comments list
+    const commentsList = document.createElement('div');
+    commentsList.className = 'comments-list';
+
+    if (comments.length === 0) {
+        const empty = document.createElement('p');
+        empty.className = 'no-comments';
+        empty.textContent = 'Nenhum comentário ainda. Seja o primeiro! 😊';
+        commentsList.appendChild(empty);
+    } else {
+        comments.forEach(comment => {
+            const commentItem = document.createElement('div');
+            commentItem.className = 'comment-item';
+
+            const commentText = document.createElement('p');
+            commentText.className = 'comment-text';
+            commentText.textContent = comment.text;
+
+            const commentMeta = document.createElement('div');
+            commentMeta.className = 'comment-meta';
+
+            const commentTime = new Date(comment.createdAt);
+            const timeStr = commentTime.toLocaleDateString('pt-BR', {
+                day: '2-digit',
+                month: 'short',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            commentMeta.innerHTML = `
+                <span class="comment-time">${timeStr}</span>
+            `;
+
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'comment-remove-btn';
+            removeBtn.innerHTML = '×';
+            removeBtn.addEventListener('click', () => {
+                cactusMetadata.removeComment(cactusId, comment.id);
+                commentItem.classList.add('removing');
+                setTimeout(() => commentItem.remove(), 300);
+
+                // Update empty state
+                if (commentsList.querySelectorAll('.comment-item').length === 0) {
+                    commentsList.innerHTML = '<p class="no-comments">Nenhum comentário ainda. Seja o primeiro! 😊</p>';
+                }
+            });
+
+            commentMeta.appendChild(removeBtn);
+            commentItem.appendChild(commentText);
+            commentItem.appendChild(commentMeta);
+            commentsList.appendChild(commentItem);
+        });
+    }
+
+    commentsSection.appendChild(commentsList);
+
+    // Add comment form
+    const commentForm = document.createElement('form');
+    commentForm.className = 'comment-form';
+
+    const textarea = document.createElement('textarea');
+    textarea.className = 'comment-input';
+    textarea.placeholder = 'Adicione um comentário sobre este cacto...';
+    textarea.maxLength = 500;
+
+    const charCount = document.createElement('div');
+    charCount.className = 'char-count';
+    charCount.textContent = '0/500';
+
+    textarea.addEventListener('input', () => {
+        charCount.textContent = `${textarea.value.length}/500`;
+    });
+
+    const submitBtn = document.createElement('button');
+    submitBtn.type = 'submit';
+    submitBtn.className = 'submit-comment-btn';
+    submitBtn.textContent = 'Comentar';
+
+    commentForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        if (textarea.value.trim()) {
+            cactusMetadata.addComment(cactusId, textarea.value.trim());
+
+            // Remove no-comments message
+            const noComments = commentsList.querySelector('.no-comments');
+            if (noComments) noComments.remove();
+
+            // Create new comment element
+            const newCommentItem = document.createElement('div');
+            newCommentItem.className = 'comment-item';
+
+            const commentText = document.createElement('p');
+            commentText.className = 'comment-text';
+            commentText.textContent = textarea.value.trim();
+
+            const commentMeta = document.createElement('div');
+            commentMeta.className = 'comment-meta';
+            commentMeta.innerHTML = '<span class="comment-time">Agora</span>';
+
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'comment-remove-btn';
+            removeBtn.innerHTML = '×';
+
+            const metadata = cactusMetadata.getMetadata(cactusId);
+            const lastComment = metadata.comments[metadata.comments.length - 1];
+
+            removeBtn.addEventListener('click', () => {
+                cactusMetadata.removeComment(cactusId, lastComment.id);
+                newCommentItem.classList.add('removing');
+                setTimeout(() => newCommentItem.remove(), 300);
+
+                if (commentsList.querySelectorAll('.comment-item').length === 0) {
+                    commentsList.innerHTML = '<p class="no-comments">Nenhum comentário ainda. Seja o primeiro! 😊</p>';
+                }
+            });
+
+            commentMeta.appendChild(removeBtn);
+            newCommentItem.appendChild(commentText);
+            newCommentItem.appendChild(commentMeta);
+            commentsList.appendChild(newCommentItem);
+
+            textarea.value = '';
+            charCount.textContent = '0/500';
+            textarea.focus();
+        }
+    });
+
+    commentForm.appendChild(textarea);
+    commentForm.appendChild(charCount);
+    commentForm.appendChild(submitBtn);
+
+    commentsSection.appendChild(commentForm);
+
+    // Assemble modal
+    modal.appendChild(header);
+    modal.appendChild(ratingSection);
+    modal.appendChild(commentsSection);
+
+    overlay.appendChild(modal);
+
+    // Close on overlay click
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+            overlay.classList.add('closing');
+            setTimeout(() => overlay.remove(), 300);
+        }
+    });
+
+    // Close on Escape key
+    const handleEscape = (e) => {
+        if (e.key === 'Escape') {
+            overlay.classList.add('closing');
+            setTimeout(() => overlay.remove(), 300);
+            document.removeEventListener('keydown', handleEscape);
+        }
+    };
+    document.addEventListener('keydown', handleEscape);
+
+    document.body.appendChild(overlay);
+}
+
+// ============================================
+// MILESTONE SYSTEM
+// ============================================
+
+class MilestoneTracker {
+    constructor() {
+        this.milestones = [];
+        this.container = document.createElement('div');
+        this.container.className = 'milestones-container';
+        document.body.appendChild(this.container);
+    }
+
+    showMilestone(message) {
+        const milestone = document.createElement('div');
+        milestone.className = 'milestone-notification';
+        milestone.textContent = message;
+
+        this.container.appendChild(milestone);
+
+        // Trigger animation
+        setTimeout(() => milestone.classList.add('show'), 10);
+
+        // Auto-remove after 3 seconds
+        setTimeout(() => {
+            milestone.classList.remove('show');
+            setTimeout(() => milestone.remove(), 300);
+        }, 3000);
+
+        console.log('🏆 Milestone:', message);
+    }
+
+    trackAction(action, data) {
+        const stats = cactusMetadata.getStats();
+        const cactiCount = gardenState.getAll().length;
+
+        // Different milestones based on action
+        switch (action) {
+            case 'rating':
+                if (stats.totalRatings === 1) {
+                    this.showMilestone('🌟 Primeiro cacto avaliado!');
+                } else if (stats.totalRatings % 5 === 0) {
+                    this.showMilestone(`🎉 ${stats.totalRatings} cactos avaliados!`);
+                }
+                break;
+
+            case 'comment':
+                if (stats.totalComments === 1) {
+                    this.showMilestone('📝 Primeiro comentário adicionado!');
+                } else if (stats.totalComments % 10 === 0) {
+                    this.showMilestone(`💬 ${stats.totalComments} comentários no total!`);
+                }
+                break;
+
+            case 'cactus-added':
+                if (cactiCount === 1) {
+                    this.showMilestone('🌵 Seu primeiro cacto plantado!');
+                } else if (cactiCount % 5 === 0) {
+                    this.showMilestone(`🌵 Você tem ${cactiCount} cactos agora!`);
+                } else if (cactiCount % 10 === 0) {
+                    this.showMilestone(`🚀 Incrível! ${cactiCount} cactos no jardim!`);
+                }
+                break;
+
+            case 'cactus-removed':
+                this.showMilestone('🗑️ Cacto removido');
+                break;
+
+            case 'avg-rating':
+                if (stats.avgRating >= 4.5) {
+                    this.showMilestone('⭐⭐⭐⭐⭐ Avaliação média excelente!');
+                } else if (stats.avgRating >= 4) {
+                    this.showMilestone('⭐⭐⭐⭐ Ótima avaliação média!');
+                }
+                break;
+        }
+    }
+}
+
+const milestoneTracker = new MilestoneTracker();
+
+// Listen for milestone events
+document.addEventListener('milestone', (e) => {
+    const { message } = e.detail;
+    if (message.includes('⭐')) {
+        milestoneTracker.trackAction('rating');
+    } else if (message.includes('💬')) {
+        milestoneTracker.trackAction('comment');
+    }
+});
+
+// ============================================
 // GARDEN MANAGEMENT
 // ============================================
 
@@ -496,6 +963,10 @@ function addNewCactus() {
     const card = createCactusCard(cactusData);
     cactusContainer.appendChild(card);
 
+    // Track milestone
+    const cactiCount = gardenState.getAll().length;
+    milestoneTracker.trackAction('cactus-added', { count: cactiCount });
+
     return cactusData;
 }
 
@@ -507,6 +978,7 @@ function removeCactus(card, id) {
         gardenState.removeCactus(id);
         updateEmptyState();
         updateCounter();
+        milestoneTracker.trackAction('cactus-removed');
     }, 400);
 }
 
@@ -616,11 +1088,66 @@ function restoreGarden() {
 // INITIALIZATION
 // ============================================
 
+// ============================================
+// STATISTICS WIDGET
+// ============================================
+
+function createStatsWidget() {
+    const widget = document.createElement('div');
+    widget.className = 'stats-widget';
+    widget.id = 'stats-widget';
+
+    function updateStats() {
+        const stats = cactusMetadata.getStats();
+        const cactiCount = gardenState.getAll().length;
+
+        widget.innerHTML = `
+            <div class="stats-content">
+                <div class="stat-item">
+                    <span class="stat-icon">🌵</span>
+                    <span class="stat-value">${cactiCount}</span>
+                    <span class="stat-label">Cactos</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-icon">⭐</span>
+                    <span class="stat-value">${stats.totalRatings}</span>
+                    <span class="stat-label">Avaliados</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-icon">💬</span>
+                    <span class="stat-value">${stats.totalComments}</span>
+                    <span class="stat-label">Comentários</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-icon">✨</span>
+                    <span class="stat-value">${stats.avgRating}</span>
+                    <span class="stat-label">Média</span>
+                </div>
+            </div>
+        `;
+    }
+
+    updateStats();
+
+    // Update stats whenever metadata changes
+    const originalNotify = cactusMetadata.notifyMilestone;
+    cactusMetadata.notifyMilestone = function(message) {
+        originalNotify.call(this, message);
+        updateStats();
+    };
+
+    return widget;
+}
+
 function init() {
     console.log('🌵 Cacto Garden v2.0 - Initializing...');
 
     // Create background particles
     createParticles();
+
+    // Create stats widget
+    const statsWidget = createStatsWidget();
+    document.body.appendChild(statsWidget);
 
     // Restore garden from cache
     restoreGarden();
@@ -633,6 +1160,7 @@ function init() {
     inputText.focus();
 
     console.log('✅ Initialization complete!');
+    console.log('📊 Stats widget created');
 }
 
 // ============================================
