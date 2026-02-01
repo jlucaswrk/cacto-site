@@ -672,6 +672,20 @@ textarea:focus {
     50% { transform: scale(1.2); }
 }
 
+/* Admin link - Discreto */
+.admin-link {
+    display: inline-block;
+    margin-top: var(--space-sm);
+    font-size: 0.8rem;
+    opacity: 0.3;
+    text-decoration: none;
+    transition: opacity var(--transition-base);
+}
+
+.admin-link:hover {
+    opacity: 0.8;
+}
+
 /* Image Loader Overlay */
 .image-loader {
     position: fixed;
