@@ -703,11 +703,226 @@ textarea:focus {
     }
 }
 
+/* ============================================
+   SPECIES LABEL - Below each cactus card
+   ============================================ */
+
+.cactus-card {
+    display: flex;
+    flex-direction: column;
+    aspect-ratio: auto;
+}
+
+.cactus-image-container {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1;
+    overflow: hidden;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+.cactus-image-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform var(--transition-slow);
+}
+
+.cactus-card:hover .cactus-image-container img {
+    transform: scale(1.1);
+}
+
+/* Species Label */
+.species-label {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(34, 197, 94, 0.05));
+    backdrop-filter: blur(10px);
+    padding: var(--space-sm) var(--space-sm);
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    border: 1px solid rgba(34, 197, 94, 0.2);
+    border-top: none;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    text-align: center;
+    min-height: 50px;
+    justify-content: center;
+}
+
+.species-name {
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--cactus-light);
+    line-height: 1.2;
+    display: block;
+}
+
+.species-scientific {
+    font-family: var(--font-body);
+    font-size: 0.65rem;
+    font-style: italic;
+    color: var(--gray-200);
+    opacity: 0.8;
+    line-height: 1.2;
+    display: block;
+}
+
+/* Adjust overlay position for new structure */
+.cactus-card .cactus-card-overlay {
+    position: absolute;
+    top: 0;
+    bottom: auto;
+    padding: var(--space-sm);
+    background: linear-gradient(180deg, rgba(0,0,0,0.5) 0%, transparent 100%);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+/* ============================================
+   SPECIES TOOLTIP
+   ============================================ */
+
+.species-tooltip {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    animation: tooltip-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.species-tooltip .tooltip-content {
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98));
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    border-radius: var(--radius-xl);
+    padding: var(--space-xl);
+    text-align: center;
+    box-shadow:
+        0 25px 50px rgba(0, 0, 0, 0.5),
+        0 0 100px rgba(34, 197, 94, 0.1);
+    min-width: 250px;
+}
+
+.species-tooltip h3 {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    color: var(--cactus-light);
+    margin-bottom: var(--space-sm);
+}
+
+.species-tooltip .scientific {
+    font-size: 1rem;
+    color: var(--sand);
+    margin-bottom: var(--space-md);
+}
+
+.species-tooltip .origin {
+    font-size: 0.9rem;
+    color: var(--gray-200);
+}
+
+@keyframes tooltip-in {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.8);
+    }
+    100% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+.species-tooltip.fade-out {
+    animation: tooltip-out 0.3s ease-out forwards;
+}
+
+@keyframes tooltip-out {
+    0% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.8);
+    }
+}
+
+/* ============================================
+   CELEBRATION EFFECT (Easter Egg)
+   ============================================ */
+
+body.celebrate {
+    animation: celebrate 0.5s ease-in-out;
+}
+
+@keyframes celebrate {
+    0%, 100% { filter: hue-rotate(0deg); }
+    25% { filter: hue-rotate(90deg); }
+    50% { filter: hue-rotate(180deg); }
+    75% { filter: hue-rotate(270deg); }
+}
+
+/* ============================================
+   CACHE INDICATOR (optional visual feedback)
+   ============================================ */
+
+.cactus-card[data-cached="true"]::after {
+    content: '💾';
+    position: absolute;
+    top: var(--space-xs);
+    left: var(--space-xs);
+    font-size: 0.7rem;
+    opacity: 0.5;
+    z-index: 3;
+}
+
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
+    }
+}
+
+/* ============================================
+   RESPONSIVE ADJUSTMENTS FOR SPECIES LABEL
+   ============================================ */
+
+@media (max-width: 768px) {
+    .species-label {
+        padding: var(--space-xs);
+        min-height: 40px;
+    }
+
+    .species-name {
+        font-size: 0.75rem;
+    }
+
+    .species-scientific {
+        font-size: 0.6rem;
+    }
+
+    .species-tooltip .tooltip-content {
+        padding: var(--space-lg);
+        min-width: 200px;
+    }
+
+    .species-tooltip h3 {
+        font-size: 1.2rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .species-label {
+        min-height: 35px;
+    }
+
+    .species-name {
+        font-size: 0.7rem;
+    }
+
+    .species-scientific {
+        font-size: 0.55rem;
     }
 }
