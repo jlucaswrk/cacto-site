@@ -87,13 +87,26 @@
                 </button>
             </div>
 
-            <div id="cactusContainer" class="cactus-container">
-                <div class="empty-state" id="emptyState">
+            <!-- Desktop View (>640px) - Original Grid Layout -->
+            <div id="cactusContainerDesktop" class="cactus-container cactus-container-desktop">
+                <div class="empty-state" id="emptyStateDesktop">
                     <div class="empty-icon">🌱</div>
                     <p>Seu jardim está vazio...</p>
                     <span>Digite "cacto" para plantar!</span>
                 </div>
             </div>
+
+            <!-- Mobile View (<640px) - Touch-Friendly Carousel/Grid -->
+            <div id="cactusContainerMobile" class="cactus-container cactus-container-mobile">
+                <div class="empty-state" id="emptyStateMobile">
+                    <div class="empty-icon">🌱</div>
+                    <p>Seu jardim está vazio...</p>
+                    <span>Digite "cacto" para plantar!</span>
+                </div>
+            </div>
+
+            <!-- Fallback for script compatibility -->
+            <div id="cactusContainer" class="cactus-container" style="display: none;"></div>
         </section>
 
         <!-- Footer -->

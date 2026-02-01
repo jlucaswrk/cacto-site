@@ -151,10 +151,24 @@ const CACHE_CONFIG = {
 
 const inputText = document.getElementById('inputText');
 const cactusContainer = document.getElementById('cactusContainer');
+const cactusContainerDesktop = document.getElementById('cactusContainerDesktop');
+const cactusContainerMobile = document.getElementById('cactusContainerMobile');
 const clearBtn = document.getElementById('clearBtn');
 const cactusCount = document.getElementById('cactusCount');
 const emptyState = document.getElementById('emptyState');
+const emptyStateDesktop = document.getElementById('emptyStateDesktop');
+const emptyStateMobile = document.getElementById('emptyStateMobile');
 const particlesContainer = document.getElementById('particles');
+
+// Get active container based on screen size
+function getActiveContainer() {
+    return window.innerWidth <= 640 ? cactusContainerMobile : cactusContainerDesktop;
+}
+
+// Get active empty state based on screen size
+function getActiveEmptyState() {
+    return window.innerWidth <= 640 ? emptyStateMobile : emptyStateDesktop;
+}
 
 // ============================================
 // STATE MANAGEMENT
@@ -1280,9 +1294,15 @@ function addNewCactus() {
     // Add to state
     gardenState.addCactus(cactusData);
 
-    // Create and add card
+    // Create and add card to both containers (they'll show/hide based on screen size)
     const card = createCactusCard(cactusData);
-    cactusContainer.appendChild(card);
+    const activeContainer = getActiveContainer();
+    activeContainer.appendChild(card);
+
+    // Also add to fallback container for compatibility
+    const cardClone = createCactusCard(cactusData);
+    const inactiveContainer = activeContainer === cactusContainerDesktop ? cactusContainerMobile : cactusContainerDesktop;
+    inactiveContainer.appendChild(cardClone);
 
     // Track milestone
     const cactiCount = gardenState.getAll().length;
@@ -1304,17 +1324,26 @@ function removeCactus(card, id) {
 }
 
 function updateEmptyState() {
-    const hasCards = cactusContainer.querySelectorAll('.cactus-card').length > 0;
+    // Check both containers
+    const desktopCards = cactusContainerDesktop.querySelectorAll('.cactus-card').length;
+    const mobileCards = cactusContainerMobile.querySelectorAll('.cactus-card').length;
+    const hasCards = desktopCards > 0 || mobileCards > 0;
+
     if (hasCards) {
-        emptyState.classList.add('hidden');
+        emptyStateDesktop?.classList.add('hidden');
+        emptyStateMobile?.classList.add('hidden');
     } else {
-        emptyState.classList.remove('hidden');
+        emptyStateDesktop?.classList.remove('hidden');
+        emptyStateMobile?.classList.remove('hidden');
     }
 }
 
 function updateCounter() {
-    const count = cactusContainer.querySelectorAll('.cactus-card:not(.removing)').length;
-    cactusCount.textContent = count;
+    // Count from both containers
+    const desktopCount = cactusContainerDesktop.querySelectorAll('.cactus-card:not(.removing)').length;
+    const mobileCount = cactusContainerMobile.querySelectorAll('.cactus-card:not(.removing)').length;
+    const total = Math.max(desktopCount, mobileCount);
+    cactusCount.textContent = total;
 }
 
 // ============================================
@@ -1361,9 +1390,12 @@ function updateCactuses() {
 }
 
 function clearGarden() {
-    const cards = cactusContainer.querySelectorAll('.cactus-card');
+    // Clear from both containers
+    const desktopCards = cactusContainerDesktop.querySelectorAll('.cactus-card');
+    const mobileCards = cactusContainerMobile.querySelectorAll('.cactus-card');
+    const allCards = Array.from(desktopCards).concat(Array.from(mobileCards));
 
-    cards.forEach((card, index) => {
+    allCards.forEach((card, index) => {
         setTimeout(() => {
             card.classList.add('removing');
             setTimeout(() => card.remove(), 400);
@@ -1396,8 +1428,13 @@ function restoreGarden() {
 
         savedCacti.forEach((cactusData, index) => {
             setTimeout(() => {
-                const card = createCactusCard(cactusData);
-                cactusContainer.appendChild(card);
+                // Add to both containers for seamless mobile/desktop switching
+                const cardDesktop = createCactusCard(cactusData);
+                cactusContainerDesktop.appendChild(cardDesktop);
+
+                const cardMobile = createCactusCard(cactusData);
+                cactusContainerMobile.appendChild(cardMobile);
+
                 updateEmptyState();
                 updateCounter();
             }, index * 100);
@@ -1495,6 +1532,21 @@ clearBtn.addEventListener('click', clearGarden);
 inputText.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         clearGarden();
+    }
+});
+
+// Handle responsive container switching
+window.addEventListener('resize', () => {
+    const isMobile = window.innerWidth <= 640;
+    const desktopShould = !isMobile;
+    const mobileShould = isMobile;
+
+    if (desktopShould) {
+        cactusContainerDesktop.classList.remove('hidden');
+        cactusContainerMobile.classList.add('hidden');
+    } else {
+        cactusContainerDesktop.classList.add('hidden');
+        cactusContainerMobile.classList.remove('hidden');
     }
 });
 
