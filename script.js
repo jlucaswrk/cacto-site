@@ -493,7 +493,7 @@ function createParticles() {
     }
 }
 
-// Create a cactus card element
+// Create a cactus card element with stars in footer
 function createCactusCard(cactusData) {
     const { id, speciesId, imageUrl, species } = cactusData;
 
@@ -528,6 +528,10 @@ function createCactusCard(cactusData) {
     img.src = imageUrl;
     imgContainer.appendChild(img);
 
+    // Card Footer (contains species label + stars)
+    const cardFooter = document.createElement('div');
+    cardFooter.className = 'card-footer';
+
     // Species info label
     const speciesLabel = document.createElement('div');
     speciesLabel.className = 'species-label';
@@ -536,19 +540,42 @@ function createCactusCard(cactusData) {
         <span class="species-scientific">${species.scientific}</span>
     `;
 
-    // Rating indicator
+    // Card Stars - Interactive inline rating
     const metadata = cactusMetadata.getMetadata(id);
-    const ratingIndicator = document.createElement('div');
-    ratingIndicator.className = 'rating-indicator';
-    if (metadata.rating > 0) {
-        ratingIndicator.innerHTML = `<span class="rating-stars">${'★'.repeat(metadata.rating)}</span>`;
+    const cardStars = document.createElement('div');
+    cardStars.className = 'card-stars';
+    cardStars.dataset.cactusId = id;
+
+    // Create 5 stars
+    for (let i = 1; i <= 5; i++) {
+        const star = document.createElement('span');
+        star.className = 'star';
+        star.dataset.rating = i;
+        star.innerHTML = '★';
+
+        if (i <= metadata.rating) {
+            star.classList.add('filled');
+        }
+
+        // Click to rate directly from card
+        star.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const newRating = i === metadata.rating ? 0 : i;
+            cactusMetadata.setRating(id, newRating);
+            updateCardStars(id, newRating);
+        });
+
+        cardStars.appendChild(star);
     }
 
-    // Overlay with buttons
+    cardFooter.appendChild(speciesLabel);
+    cardFooter.appendChild(cardStars);
+
+    // Overlay with action buttons
     const overlay = document.createElement('div');
     overlay.className = 'cactus-card-overlay';
 
-    // Review button (shows comments & rating)
+    // Review button (shows comments & rating modal)
     const reviewBtn = document.createElement('button');
     reviewBtn.className = 'review-btn';
     reviewBtn.innerHTML = '💬';
@@ -578,19 +605,29 @@ function createCactusCard(cactusData) {
     overlay.appendChild(reviewBtn);
     overlay.appendChild(removeBtn);
 
+    // Assemble card
     card.appendChild(imgContainer);
-    card.appendChild(ratingIndicator);
-    card.appendChild(speciesLabel);
+    card.appendChild(cardFooter);
     card.appendChild(overlay);
 
-    // Click on card shows species info (but not if clicking buttons)
+    // Click on card shows species info (but not if clicking buttons/stars)
     card.addEventListener('click', (e) => {
-        if (!e.target.closest('button')) {
+        if (!e.target.closest('button') && !e.target.closest('.star')) {
             showSpeciesInfo(species);
         }
     });
 
     return card;
+}
+
+// Update stars display on card
+function updateCardStars(cactusId, rating) {
+    const cardStars = document.querySelector(`.card-stars[data-cactus-id="${cactusId}"]`);
+    if (cardStars) {
+        cardStars.querySelectorAll('.star').forEach((star, idx) => {
+            star.classList.toggle('filled', idx < rating);
+        });
+    }
 }
 
 // Show species info tooltip/modal
@@ -835,10 +872,7 @@ function showReviewModal(cactusId, species) {
         return commentItem;
     }
 
-    renderComments();
-    commentsSection.appendChild(commentsList);
-
-    // Add comment form
+    // Add comment form FIRST (before comments list)
     const commentForm = document.createElement('form');
     commentForm.className = 'comment-form';
 
@@ -921,7 +955,11 @@ function showReviewModal(cactusId, species) {
     formActions.appendChild(submitBtn);
     commentForm.appendChild(inputWrapper);
     commentForm.appendChild(formActions);
+
+    // Add form FIRST, then comments list
     commentsSection.appendChild(commentForm);
+    renderComments();
+    commentsSection.appendChild(commentsList);
 
     // Assemble modal
     contentWrapper.appendChild(header);
@@ -972,23 +1010,10 @@ function showReviewModal(cactusId, species) {
     setTimeout(() => textarea.focus(), 400);
 }
 
-// Helper function to update card rating indicator
+// Helper function to update card rating indicator (now updates card stars)
 function updateCardRating(cactusId, rating) {
-    const card = document.querySelector(`.cactus-card[data-id="${cactusId}"]`);
-    if (card) {
-        let indicator = card.querySelector('.rating-indicator');
-        if (!indicator) {
-            indicator = document.createElement('div');
-            indicator.className = 'rating-indicator';
-            card.appendChild(indicator);
-        }
-
-        if (rating > 0) {
-            indicator.innerHTML = `<span class="rating-stars">${'★'.repeat(rating)}</span>`;
-        } else {
-            indicator.innerHTML = '';
-        }
-    }
+    // Update the stars in card footer
+    updateCardStars(cactusId, rating);
 }
 
 // ============================================

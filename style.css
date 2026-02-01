@@ -72,6 +72,53 @@ html {
     font-size: 16px;
     scroll-behavior: smooth;
     overflow-x: hidden;
+    /* Prevent iOS zoom on input focus */
+    -webkit-text-size-adjust: 100%;
+}
+
+/* ============================================
+   iOS ZOOM PREVENTION - Global Input Styles
+   Font-size 16px+ prevents iOS auto-zoom
+   ============================================ */
+
+input,
+textarea,
+select,
+button {
+    font-size: 16px !important; /* Prevents iOS zoom */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    /* Remove iOS input shadows */
+    -webkit-box-shadow: none;
+    box-shadow: none;
+    /* Prevent text selection issues */
+    -webkit-user-select: text;
+    user-select: text;
+    /* Touch optimization */
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Ensure minimum touch target size */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="search"],
+input[type="tel"],
+input[type="url"],
+input[type="number"],
+textarea {
+    min-height: 44px; /* iOS recommended minimum */
+    font-size: 16px !important;
+}
+
+/* Focus states without zoom */
+input:focus,
+textarea:focus,
+select:focus {
+    outline: none;
+    font-size: 16px !important;
 }
 
 body {
@@ -713,21 +760,45 @@ textarea:focus {
 }
 
 /* ============================================
-   SPECIES LABEL - Below each cactus card
+   CACTUS CARD - Premium Redesign with Stars Below
+   Using frontend-design skill principles:
+   - Glassmorphism layering
+   - Organic shadows and depth
+   - Stars integrated into card footer
    ============================================ */
 
 .cactus-card {
     display: flex;
     flex-direction: column;
     aspect-ratio: auto;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    background: linear-gradient(
+        145deg,
+        rgba(30, 41, 59, 0.6) 0%,
+        rgba(15, 23, 42, 0.8) 100%
+    );
+    border: 1px solid rgba(34, 197, 94, 0.15);
+    box-shadow:
+        0 4px 20px rgba(0, 0, 0, 0.2),
+        0 0 40px rgba(34, 197, 94, 0.05);
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+.cactus-card:hover {
+    transform: translateY(-4px);
+    box-shadow:
+        0 12px 40px rgba(0, 0, 0, 0.3),
+        0 0 60px rgba(34, 197, 94, 0.1);
+    border-color: rgba(34, 197, 94, 0.3);
+}
+
+/* Image Container */
 .cactus-image-container {
     position: relative;
     width: 100%;
     aspect-ratio: 1;
     overflow: hidden;
-    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 }
 
 .cactus-image-container img {
@@ -738,52 +809,131 @@ textarea:focus {
 }
 
 .cactus-card:hover .cactus-image-container img {
-    transform: scale(1.1);
+    transform: scale(1.08);
+}
+
+/* Gradient overlay on image */
+.cactus-image-container::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        180deg,
+        transparent 0%,
+        transparent 60%,
+        rgba(15, 23, 42, 0.4) 100%
+    );
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.cactus-card:hover .cactus-image-container::after {
+    opacity: 0.6;
+}
+
+/* Card Footer - Contains species info AND stars */
+.card-footer {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    padding: var(--space-sm);
+    background: linear-gradient(
+        180deg,
+        rgba(15, 23, 42, 0.95) 0%,
+        rgba(30, 41, 59, 0.9) 100%
+    );
+    border-top: 1px solid rgba(34, 197, 94, 0.1);
 }
 
 /* Species Label */
 .species-label {
-    background: linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(34, 197, 94, 0.05));
-    backdrop-filter: blur(10px);
-    padding: var(--space-sm) var(--space-sm);
-    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
-    border: 1px solid rgba(34, 197, 94, 0.2);
-    border-top: none;
     display: flex;
     flex-direction: column;
     gap: 2px;
     text-align: center;
-    min-height: 50px;
-    justify-content: center;
 }
 
 .species-name {
     font-family: var(--font-display);
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     font-weight: 700;
     color: var(--cactus-light);
     line-height: 1.2;
     display: block;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .species-scientific {
     font-family: var(--font-body);
-    font-size: 0.65rem;
+    font-size: 0.6rem;
     font-style: italic;
     color: var(--gray-200);
-    opacity: 0.8;
+    opacity: 0.7;
     line-height: 1.2;
     display: block;
 }
 
-/* Adjust overlay position for new structure */
+/* Card Stars - Inline rating below species */
+.card-stars {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 2px;
+    padding-top: var(--space-xs);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    margin-top: var(--space-xs);
+}
+
+.card-stars .star {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.15);
+    transition: all 0.2s ease;
+    cursor: pointer;
+    padding: 2px;
+    line-height: 1;
+}
+
+.card-stars .star.filled {
+    color: var(--sand-dark);
+    text-shadow: 0 0 8px rgba(253, 230, 138, 0.4);
+}
+
+.card-stars .star:hover {
+    transform: scale(1.2);
+    color: var(--sand);
+}
+
+/* No rating placeholder */
+.card-stars-empty {
+    font-size: 0.65rem;
+    color: var(--gray-200);
+    opacity: 0.4;
+    text-align: center;
+    padding-top: var(--space-xs);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    margin-top: var(--space-xs);
+}
+
+/* Action buttons overlay */
 .cactus-card .cactus-card-overlay {
     position: absolute;
-    top: 0;
+    top: var(--space-xs);
+    right: var(--space-xs);
+    left: auto;
     bottom: auto;
-    padding: var(--space-sm);
-    background: linear-gradient(180deg, rgba(0,0,0,0.5) 0%, transparent 100%);
-    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    padding: 0;
+    background: none;
+    border-radius: 0;
+    display: flex;
+    gap: var(--space-xs);
+    opacity: 0;
+    transform: translateY(-5px);
+    transition: all 0.2s ease;
+}
+
+.cactus-card:hover .cactus-card-overlay {
+    opacity: 1;
+    transform: translateY(0);
 }
 
 /* ============================================
@@ -895,21 +1045,25 @@ body.celebrate {
 }
 
 /* ============================================
-   RESPONSIVE ADJUSTMENTS FOR SPECIES LABEL
+   RESPONSIVE ADJUSTMENTS FOR CARD & SPECIES
    ============================================ */
 
 @media (max-width: 768px) {
-    .species-label {
+    .card-footer {
         padding: var(--space-xs);
-        min-height: 40px;
     }
 
     .species-name {
-        font-size: 0.75rem;
+        font-size: 0.7rem;
     }
 
     .species-scientific {
-        font-size: 0.6rem;
+        font-size: 0.55rem;
+    }
+
+    .card-stars .star {
+        font-size: 0.75rem;
+        padding: 1px;
     }
 
     .species-tooltip .tooltip-content {
@@ -920,19 +1074,59 @@ body.celebrate {
     .species-tooltip h3 {
         font-size: 1.2rem;
     }
+
+    /* Smaller action buttons on mobile */
+    .review-btn,
+    .remove-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 0.85rem;
+    }
+
+    .remove-btn svg {
+        width: 14px;
+        height: 14px;
+    }
 }
 
 @media (max-width: 480px) {
-    .species-label {
-        min-height: 35px;
+    .card-footer {
+        padding: 6px;
     }
 
     .species-name {
-        font-size: 0.7rem;
+        font-size: 0.65rem;
     }
 
     .species-scientific {
-        font-size: 0.55rem;
+        font-size: 0.5rem;
+    }
+
+    .card-stars {
+        gap: 1px;
+        padding-top: 4px;
+        margin-top: 4px;
+    }
+
+    .card-stars .star {
+        font-size: 0.7rem;
+    }
+
+    /* Even smaller buttons on small screens */
+    .review-btn,
+    .remove-btn {
+        width: 28px;
+        height: 28px;
+        font-size: 0.75rem;
+    }
+
+    .remove-btn svg {
+        width: 12px;
+        height: 12px;
+    }
+
+    .cactus-card-overlay {
+        gap: 4px;
     }
 }
 
@@ -963,6 +1157,8 @@ body.celebrate {
     padding: 0;
     opacity: 1;
     animation: modalOverlayIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    /* Prevent scroll on overlay */
+    overflow: hidden;
 }
 
 /* Mobile: bottom sheet style */
@@ -995,13 +1191,14 @@ body.celebrate {
     }
 }
 
-/* Modal Container - Card with depth */
+/* Modal Container - Fixed height on mobile, no scroll issues */
 .review-modal {
     position: relative;
     width: 100%;
     max-width: 480px;
-    max-height: 90vh;
-    max-height: 90dvh; /* Dynamic viewport height for mobile */
+    /* Fixed height instead of max-height to prevent scroll */
+    height: 85vh;
+    height: 85dvh;
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -1038,6 +1235,7 @@ body.celebrate {
     .review-modal {
         border-radius: var(--radius-xl);
         border-bottom: 1px solid rgba(34, 197, 94, 0.15);
+        height: auto;
         max-height: 85vh;
         animation: modalScaleIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
         box-shadow:
@@ -1113,14 +1311,14 @@ body.celebrate {
     }
 }
 
-/* Modal Content Wrapper */
+/* Modal Content Wrapper - Scrollable content area */
 .modal-content-wrapper {
+    display: flex;
+    flex-direction: column;
     flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding: var(--space-xl);
-    padding-top: var(--space-2xl);
-    -webkit-overflow-scrolling: touch;
+    overflow: hidden;
+    padding: var(--space-lg);
+    padding-top: var(--space-xl);
 }
 
 @media (min-width: 640px) {
@@ -1354,28 +1552,37 @@ body.celebrate {
 
 /* ============================================
    COMMENTS SECTION - Chat-like design
+   Reordered: Input FIRST, then comments below
    ============================================ */
 
 .comments-section {
     display: flex;
     flex-direction: column;
-    gap: var(--space-md);
+    flex: 1;
+    overflow: hidden;
+    gap: var(--space-sm);
 }
 
 .comments-section h3 {
-    margin-bottom: var(--space-sm);
+    margin-bottom: var(--space-xs);
+    flex-shrink: 0;
 }
 
-/* Comments List - Scrollable area */
+/* Comments List - Scrollable area (appears BELOW form) */
 .comments-list {
     display: flex;
     flex-direction: column;
     gap: var(--space-sm);
-    max-height: 200px;
+    flex: 1;
+    min-height: 100px;
+    max-height: none;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: var(--space-sm);
     margin: 0 calc(-1 * var(--space-sm));
     scroll-behavior: smooth;
+    /* Custom scrollbar for mobile */
+    -webkit-overflow-scrolling: touch;
 }
 
 /* Comment scrollbar styling */
@@ -1533,15 +1740,19 @@ body.celebrate {
 }
 
 /* ============================================
-   COMMENT FORM - Modern Input
+   COMMENT FORM - Modern Input (Appears FIRST)
    ============================================ */
 
 .comment-form {
     display: flex;
     flex-direction: column;
     gap: var(--space-sm);
-    padding-top: var(--space-md);
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    padding-bottom: var(--space-md);
+    margin-bottom: var(--space-sm);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    flex-shrink: 0;
+    /* Ensure form is always visible */
+    order: -1;
 }
 
 /* Input wrapper for floating label effect */
@@ -1681,43 +1892,114 @@ body.celebrate {
     to { transform: rotate(360deg); }
 }
 
-/* Rating Indicator on Card */
+/* Rating Indicator on Card - Now hidden, stars are in card footer */
 .rating-indicator {
-    position: absolute;
-    top: var(--space-sm);
-    right: var(--space-sm);
-    z-index: 10;
+    display: none;
 }
 
 .rating-stars {
-    background: rgba(253, 164, 39, 0.9);
-    padding: var(--space-xs) var(--space-sm);
-    border-radius: var(--radius-sm);
-    font-size: 0.9rem;
-    color: var(--night);
-    display: inline-block;
-    font-weight: bold;
+    display: none;
 }
+
+/* ============================================
+   FLOATING ACTION BUTTONS - Premium Redesign
+   Glassmorphism with organic feel
+   ============================================ */
 
 /* Review Button on Card */
 .review-btn {
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
     border: none;
-    background: rgba(34, 197, 94, 0.2);
-    color: var(--cactus);
-    font-size: 1.3rem;
+    background: linear-gradient(
+        135deg,
+        rgba(34, 197, 94, 0.9) 0%,
+        rgba(21, 128, 61, 0.9) 100%
+    );
+    color: var(--white);
+    font-size: 1rem;
     cursor: pointer;
-    border-radius: var(--radius-sm);
-    transition: all var(--transition-fast) ease;
+    border-radius: var(--radius-full);
+    transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
     display: flex;
     align-items: center;
     justify-content: center;
+    box-shadow:
+        0 4px 12px rgba(34, 197, 94, 0.4),
+        0 2px 4px rgba(0, 0, 0, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(4px);
+    -webkit-tap-highlight-color: transparent;
+}
+
+.review-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.15) 0%,
+        transparent 50%
+    );
+    opacity: 0;
+    transition: opacity 0.2s ease;
 }
 
 .review-btn:hover {
-    background: rgba(34, 197, 94, 0.4);
-    transform: scale(1.1);
+    transform: scale(1.15) translateY(-2px);
+    box-shadow:
+        0 8px 20px rgba(34, 197, 94, 0.5),
+        0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.review-btn:hover::before {
+    opacity: 1;
+}
+
+.review-btn:active {
+    transform: scale(1.05);
+}
+
+/* Remove Button - Redesigned */
+.remove-btn {
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: linear-gradient(
+        135deg,
+        rgba(239, 68, 68, 0.9) 0%,
+        rgba(185, 28, 28, 0.9) 100%
+    );
+    color: var(--white);
+    cursor: pointer;
+    border-radius: var(--radius-full);
+    transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow:
+        0 4px 12px rgba(239, 68, 68, 0.4),
+        0 2px 4px rgba(0, 0, 0, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(4px);
+    -webkit-tap-highlight-color: transparent;
+}
+
+.remove-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.remove-btn:hover {
+    transform: scale(1.15) translateY(-2px);
+    box-shadow:
+        0 8px 20px rgba(239, 68, 68, 0.5),
+        0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.remove-btn:active {
+    transform: scale(1.05);
 }
 
 /* ============================================
