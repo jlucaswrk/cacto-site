@@ -852,6 +852,102 @@ function showReviewModal(cactusId, species) {
 }
 
 // ============================================
+// iOS KEYBOARD HANDLER (Visual Viewport API)
+// ============================================
+
+class iOSKeyboardHandler {
+    constructor() {
+        this.isKeyboardVisible = false;
+        this.keyboardHeight = 0;
+        this.initialViewportHeight = window.innerHeight;
+        this.init();
+    }
+
+    init() {
+        // Check if Visual Viewport API is available (iOS 13+)
+        if (window.visualViewport) {
+            console.log('📱 Visual Viewport API disponível - iOS keyboard handling ativado');
+
+            // Use resize and scroll events
+            window.visualViewport.addEventListener('resize', this.handleViewportChange.bind(this));
+            window.visualViewport.addEventListener('scroll', this.handleViewportChange.bind(this));
+
+            // Also listen for focus events on inputs
+            document.addEventListener('focusin', this.handleFocusIn.bind(this));
+            document.addEventListener('focusout', this.handleFocusOut.bind(this));
+        } else {
+            console.log('📱 Visual Viewport API não disponível');
+        }
+
+        // Set CSS custom property for initial viewport height
+        this.updateCSSProperties(0);
+    }
+
+    handleViewportChange() {
+        if (!window.visualViewport) return;
+
+        const currentHeight = window.visualViewport.height;
+        const offsetTop = window.visualViewport.offsetTop;
+
+        // Calculate keyboard height
+        // On iOS, when keyboard opens, visualViewport.height shrinks
+        const heightDiff = this.initialViewportHeight - currentHeight - offsetTop;
+        this.keyboardHeight = Math.max(0, heightDiff);
+
+        // Determine if keyboard is visible (threshold of 100px to avoid false positives)
+        const wasVisible = this.isKeyboardVisible;
+        this.isKeyboardVisible = this.keyboardHeight > 100;
+
+        // Update CSS custom property
+        this.updateCSSProperties(this.isKeyboardVisible ? this.keyboardHeight : 0);
+
+        // Add/remove class on body
+        if (this.isKeyboardVisible && !wasVisible) {
+            document.body.classList.add('keyboard-visible');
+            console.log('⌨️ Keyboard aberto - altura:', this.keyboardHeight);
+        } else if (!this.isKeyboardVisible && wasVisible) {
+            document.body.classList.remove('keyboard-visible');
+            console.log('⌨️ Keyboard fechado');
+        }
+    }
+
+    handleFocusIn(e) {
+        const isInput = e.target.matches('input, textarea, [contenteditable]');
+        if (isInput) {
+            document.body.classList.add('input-focused');
+            // Small delay to let iOS open the keyboard
+            setTimeout(() => this.handleViewportChange(), 300);
+        }
+    }
+
+    handleFocusOut(e) {
+        const isInput = e.target.matches('input, textarea, [contenteditable]');
+        if (isInput) {
+            // Delay to check if focus moved to another input
+            setTimeout(() => {
+                const activeEl = document.activeElement;
+                if (!activeEl || !activeEl.matches('input, textarea, [contenteditable]')) {
+                    document.body.classList.remove('input-focused');
+                    this.updateCSSProperties(0);
+                }
+            }, 100);
+        }
+    }
+
+    updateCSSProperties(keyboardHeight) {
+        // Set CSS custom property for keyboard height
+        document.documentElement.style.setProperty('--keyboard-height', `${keyboardHeight}px`);
+
+        // Also set safe keyboard offset (accounts for safe area)
+        const safeOffset = keyboardHeight > 0 ? keyboardHeight : 0;
+        document.documentElement.style.setProperty('--keyboard-offset', `${safeOffset}px`);
+    }
+}
+
+// Initialize iOS keyboard handler
+const iosKeyboardHandler = new iOSKeyboardHandler();
+
+// ============================================
 // MILESTONE SYSTEM
 // ============================================
 

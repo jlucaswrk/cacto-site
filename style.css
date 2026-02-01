@@ -1327,6 +1327,29 @@ body.celebrate {
 }
 
 /* ============================================
+   iOS KEYBOARD SUPPORT
+   Using Visual Viewport API + CSS Custom Properties
+   ============================================ */
+
+:root {
+    --keyboard-height: 0px;
+    --keyboard-offset: 0px;
+}
+
+/* When keyboard is visible on iOS */
+body.keyboard-visible {
+    /* Prevent body from scrolling when keyboard is open */
+    overflow: hidden;
+}
+
+body.input-focused .milestones-container {
+    /* Move milestones above keyboard when input is focused */
+    bottom: calc(var(--keyboard-height) + var(--space-lg));
+    top: auto;
+    transition: bottom 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ============================================
    MILESTONE NOTIFICATIONS
    Premium toast-style notifications with mobile-first design
    ============================================ */
@@ -1345,6 +1368,9 @@ body.celebrate {
     width: 100%;
     max-width: 400px;
     padding: 0 var(--space-md);
+    /* Smooth transition for keyboard appearance */
+    transition: top 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                bottom 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .milestone-notification {
@@ -1475,6 +1501,20 @@ body.celebrate {
         border-radius: var(--radius-lg);
         white-space: normal;
         line-height: 1.3;
+    }
+
+    /* iOS Keyboard - Milestones above keyboard */
+    body.input-focused .milestones-container,
+    body.keyboard-visible .milestones-container {
+        top: auto;
+        bottom: calc(var(--keyboard-height, 0px) + var(--space-md));
+    }
+
+    /* Stats widget - also respect keyboard */
+    body.input-focused .stats-widget,
+    body.keyboard-visible .stats-widget {
+        bottom: calc(var(--keyboard-height, 0px) + var(--space-md));
+        transition: bottom 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
 }
 
