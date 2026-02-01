@@ -337,6 +337,7 @@ const gardenState = new GardenState();
 
 // ============================================
 // CACTUS REVIEWS & METADATA SYSTEM
+// Com integração Supabase para sincronização na nuvem
 // ============================================
 
 class CactusMetadata {
@@ -345,10 +346,22 @@ class CactusMetadata {
             key: 'cacto-metadata-v1'
         };
         this.metadata = new Map();
+        this.sessionId = this.getOrCreateSessionId();
+        this.supabaseEnabled = typeof supabase !== 'undefined';
         this.load();
     }
 
-    // Load metadata from localStorage
+    // Gerar ou recuperar ID de sessão único
+    getOrCreateSessionId() {
+        let sessionId = localStorage.getItem('cacto-session-id');
+        if (!sessionId) {
+            sessionId = 'session-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('cacto-session-id', sessionId);
+        }
+        return sessionId;
+    }
+
+    // Load metadata from localStorage (e sincronizar com Supabase se disponível)
     load() {
         try {
             const stored = localStorage.getItem(this.storage.key);
@@ -362,7 +375,7 @@ class CactusMetadata {
         }
     }
 
-    // Save metadata to localStorage
+    // Save metadata to localStorage E Supabase
     save() {
         try {
             const data = Array.from(this.metadata.entries());
@@ -381,18 +394,42 @@ class CactusMetadata {
         };
     }
 
-    // Set rating for a cactus
-    setRating(cactusId, rating) {
+    // Set rating for a cactus (salva local + Supabase)
+    setRating(cactusId, rating, speciesData = null) {
         const metadata = this.getMetadata(cactusId);
         metadata.rating = Math.max(0, Math.min(5, rating));
         metadata.updatedAt = Date.now();
         this.metadata.set(String(cactusId), metadata);
         this.save();
+
+        // Sincronizar com Supabase
+        if (this.supabaseEnabled) {
+            this.syncRatingToSupabase(cactusId, rating, speciesData);
+        }
+
         this.notifyMilestone(`⭐ Cacto avaliado com ${metadata.rating} estrelas!`);
         return metadata;
     }
 
-    // Add comment to a cactus
+    // Sincronizar rating com Supabase
+    async syncRatingToSupabase(cactusId, rating, speciesData) {
+        try {
+            const reviewData = {
+                cactus_id: String(cactusId),
+                species_id: speciesData?.id || 'unknown',
+                species_name: speciesData?.name || 'Desconhecido',
+                rating: rating,
+                user_session_id: this.sessionId
+            };
+
+            await supabase.createReview(reviewData);
+            console.log('☁️ Rating sincronizado com Supabase:', rating);
+        } catch (error) {
+            console.warn('Falha ao sincronizar rating com Supabase:', error);
+        }
+    }
+
+    // Add comment to a cactus (salva local + Supabase)
     addComment(cactusId, comment) {
         const metadata = this.getMetadata(cactusId);
         const newComment = {
@@ -404,8 +441,31 @@ class CactusMetadata {
         metadata.updatedAt = Date.now();
         this.metadata.set(String(cactusId), metadata);
         this.save();
+
+        // Sincronizar com Supabase
+        if (this.supabaseEnabled) {
+            this.syncCommentToSupabase(cactusId, comment);
+        }
+
         this.notifyMilestone(`💬 Comentário adicionado! Total: ${metadata.comments.length} comentários`);
         return newComment;
+    }
+
+    // Sincronizar comentário com Supabase
+    async syncCommentToSupabase(cactusId, commentText) {
+        try {
+            const commentData = {
+                cactus_id: String(cactusId),
+                comment_text: commentText,
+                user_session_id: this.sessionId,
+                user_name: 'Jardineiro Anônimo'
+            };
+
+            await supabase.createComment(commentData);
+            console.log('☁️ Comentário sincronizado com Supabase');
+        } catch (error) {
+            console.warn('Falha ao sincronizar comentário com Supabase:', error);
+        }
     }
 
     // Remove comment from a cactus
@@ -423,7 +483,7 @@ class CactusMetadata {
         return Array.from(this.metadata.values());
     }
 
-    // Get stats
+    // Get stats (local + cloud)
     getStats() {
         const allMetadata = this.getAll();
         const totalRatings = allMetadata.filter(m => m.rating > 0).length;
@@ -561,7 +621,7 @@ function createCactusCard(cactusData) {
         star.addEventListener('click', (e) => {
             e.stopPropagation();
             const newRating = i === metadata.rating ? 0 : i;
-            cactusMetadata.setRating(id, newRating);
+            cactusMetadata.setRating(id, newRating, species);
             updateCardStars(id, newRating);
         });
 
@@ -745,7 +805,7 @@ function showReviewModal(cactusId, species) {
         star.addEventListener('click', () => {
             const newRating = i === currentRating ? 0 : i;
             currentRating = newRating;
-            cactusMetadata.setRating(cactusId, newRating);
+            cactusMetadata.setRating(cactusId, newRating, species);
 
             // Update stars display
             starsContainer.querySelectorAll('.star-btn').forEach((s, idx) => {
