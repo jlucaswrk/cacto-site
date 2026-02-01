@@ -627,8 +627,18 @@ function showReviewModal(cactusId, species) {
     if (existing) existing.remove();
 
     const metadata = cactusMetadata.getMetadata(cactusId);
-    const currentRating = metadata.rating || 0;
+    let currentRating = metadata.rating || 0;
     const comments = metadata.comments || [];
+
+    // Rating feedback messages
+    const ratingMessages = [
+        '',
+        '😕 Precisa melhorar',
+        '🙂 Razoável',
+        '😊 Bom cacto!',
+        '🤩 Ótimo cacto!',
+        '🌟 Cacto perfeito!'
+    ];
 
     // Create modal overlay
     const overlay = document.createElement('div');
@@ -638,13 +648,9 @@ function showReviewModal(cactusId, species) {
     const modal = document.createElement('div');
     modal.className = 'review-modal';
 
-    const closeBtn = document.createElement('button');
-    closeBtn.className = 'modal-close-btn';
-    closeBtn.innerHTML = '✕';
-    closeBtn.addEventListener('click', () => {
-        overlay.classList.add('closing');
-        setTimeout(() => overlay.remove(), 300);
-    });
+    // Modal content wrapper (for scrolling)
+    const contentWrapper = document.createElement('div');
+    contentWrapper.className = 'modal-content-wrapper';
 
     // Header
     const header = document.createElement('div');
@@ -653,15 +659,31 @@ function showReviewModal(cactusId, species) {
         <h2>${species.name}</h2>
         <p class="modal-subtitle">${species.scientific}</p>
     `;
+
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'modal-close-btn';
+    closeBtn.innerHTML = '✕';
+    closeBtn.addEventListener('click', () => {
+        overlay.classList.add('closing');
+        setTimeout(() => overlay.remove(), 300);
+    });
     header.appendChild(closeBtn);
 
     // Rating section
     const ratingSection = document.createElement('div');
     ratingSection.className = 'rating-section';
-    ratingSection.innerHTML = '<h3>⭐ Avaliação</h3>';
+    ratingSection.innerHTML = '<h3>Avaliação</h3>';
 
     const starsContainer = document.createElement('div');
     starsContainer.className = 'stars-container';
+
+    // Rating feedback element
+    const ratingFeedback = document.createElement('div');
+    ratingFeedback.className = 'rating-feedback';
+    if (currentRating > 0) {
+        ratingFeedback.textContent = ratingMessages[currentRating];
+        ratingFeedback.classList.add('visible');
+    }
 
     for (let i = 1; i <= 5; i++) {
         const star = document.createElement('button');
@@ -670,89 +692,163 @@ function showReviewModal(cactusId, species) {
         star.dataset.rating = i;
         star.classList.toggle('active', i <= currentRating);
 
+        // Hover effect for stars
+        star.addEventListener('mouseenter', () => {
+            starsContainer.querySelectorAll('.star-btn').forEach((s, idx) => {
+                s.style.color = idx < i ? 'var(--sand)' : '';
+            });
+        });
+
+        star.addEventListener('mouseleave', () => {
+            starsContainer.querySelectorAll('.star-btn').forEach((s, idx) => {
+                s.style.color = '';
+            });
+        });
+
         star.addEventListener('click', () => {
             const newRating = i === currentRating ? 0 : i;
+            currentRating = newRating;
             cactusMetadata.setRating(cactusId, newRating);
 
             // Update stars display
             starsContainer.querySelectorAll('.star-btn').forEach((s, idx) => {
                 s.classList.toggle('active', idx < newRating);
             });
+
+            // Update feedback text
+            if (newRating > 0) {
+                ratingFeedback.textContent = ratingMessages[newRating];
+                ratingFeedback.classList.add('visible');
+            } else {
+                ratingFeedback.classList.remove('visible');
+            }
+
+            // Update card rating indicator
+            updateCardRating(cactusId, newRating);
         });
 
         starsContainer.appendChild(star);
     }
 
     ratingSection.appendChild(starsContainer);
+    ratingSection.appendChild(ratingFeedback);
 
     // Comments section
     const commentsSection = document.createElement('div');
     commentsSection.className = 'comments-section';
-    commentsSection.innerHTML = '<h3>💬 Comentários</h3>';
+    commentsSection.innerHTML = '<h3>Comentários</h3>';
 
     // Comments list
     const commentsList = document.createElement('div');
     commentsList.className = 'comments-list';
 
-    if (comments.length === 0) {
-        const empty = document.createElement('p');
-        empty.className = 'no-comments';
-        empty.textContent = 'Nenhum comentário ainda. Seja o primeiro! 😊';
-        commentsList.appendChild(empty);
-    } else {
-        comments.forEach(comment => {
-            const commentItem = document.createElement('div');
-            commentItem.className = 'comment-item';
+    function renderComments() {
+        commentsList.innerHTML = '';
 
-            const commentText = document.createElement('p');
-            commentText.className = 'comment-text';
-            commentText.textContent = comment.text;
-
-            const commentMeta = document.createElement('div');
-            commentMeta.className = 'comment-meta';
-
-            const commentTime = new Date(comment.createdAt);
-            const timeStr = commentTime.toLocaleDateString('pt-BR', {
-                day: '2-digit',
-                month: 'short',
-                hour: '2-digit',
-                minute: '2-digit'
+        if (comments.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'no-comments';
+            empty.innerHTML = 'Nenhum comentário ainda.<br>Seja o primeiro!';
+            commentsList.appendChild(empty);
+        } else {
+            comments.forEach(comment => {
+                const commentItem = createCommentElement(comment, cactusId, commentsList);
+                commentsList.appendChild(commentItem);
             });
 
-            commentMeta.innerHTML = `
-                <span class="comment-time">${timeStr}</span>
-            `;
-
-            const removeBtn = document.createElement('button');
-            removeBtn.className = 'comment-remove-btn';
-            removeBtn.innerHTML = '×';
-            removeBtn.addEventListener('click', () => {
-                cactusMetadata.removeComment(cactusId, comment.id);
-                commentItem.classList.add('removing');
-                setTimeout(() => commentItem.remove(), 300);
-
-                // Update empty state
-                if (commentsList.querySelectorAll('.comment-item').length === 0) {
-                    commentsList.innerHTML = '<p class="no-comments">Nenhum comentário ainda. Seja o primeiro! 😊</p>';
-                }
-            });
-
-            commentMeta.appendChild(removeBtn);
-            commentItem.appendChild(commentText);
-            commentItem.appendChild(commentMeta);
-            commentsList.appendChild(commentItem);
-        });
+            // Scroll to bottom
+            setTimeout(() => {
+                commentsList.scrollTop = commentsList.scrollHeight;
+            }, 100);
+        }
     }
 
+    function createCommentElement(comment, cactusId, listElement) {
+        const commentItem = document.createElement('div');
+        commentItem.className = 'comment-item';
+
+        const commentText = document.createElement('p');
+        commentText.className = 'comment-text';
+        commentText.textContent = comment.text;
+
+        const commentMeta = document.createElement('div');
+        commentMeta.className = 'comment-meta';
+
+        const commentTime = new Date(comment.createdAt);
+        const now = new Date();
+        const diffMs = now - commentTime;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+
+        let timeStr;
+        if (diffMins < 1) {
+            timeStr = 'Agora';
+        } else if (diffMins < 60) {
+            timeStr = `${diffMins}min atrás`;
+        } else if (diffHours < 24) {
+            timeStr = `${diffHours}h atrás`;
+        } else if (diffDays < 7) {
+            timeStr = `${diffDays}d atrás`;
+        } else {
+            timeStr = commentTime.toLocaleDateString('pt-BR', {
+                day: '2-digit',
+                month: 'short'
+            });
+        }
+
+        const timeSpan = document.createElement('span');
+        timeSpan.className = 'comment-time';
+        timeSpan.textContent = timeStr;
+
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'comment-remove-btn';
+        removeBtn.innerHTML = '×';
+        removeBtn.setAttribute('aria-label', 'Remover comentário');
+
+        removeBtn.addEventListener('click', () => {
+            cactusMetadata.removeComment(cactusId, comment.id);
+            commentItem.classList.add('removing');
+
+            setTimeout(() => {
+                // Remove from local array
+                const idx = comments.findIndex(c => c.id === comment.id);
+                if (idx > -1) comments.splice(idx, 1);
+
+                commentItem.remove();
+
+                // Update empty state
+                if (listElement.querySelectorAll('.comment-item').length === 0) {
+                    const empty = document.createElement('div');
+                    empty.className = 'no-comments';
+                    empty.innerHTML = 'Nenhum comentário ainda.<br>Seja o primeiro!';
+                    listElement.appendChild(empty);
+                }
+            }, 250);
+        });
+
+        commentMeta.appendChild(timeSpan);
+        commentMeta.appendChild(removeBtn);
+        commentItem.appendChild(commentText);
+        commentItem.appendChild(commentMeta);
+
+        return commentItem;
+    }
+
+    renderComments();
     commentsSection.appendChild(commentsList);
 
     // Add comment form
     const commentForm = document.createElement('form');
     commentForm.className = 'comment-form';
 
+    // Input wrapper for floating char count
+    const inputWrapper = document.createElement('div');
+    inputWrapper.className = 'comment-input-wrapper';
+
     const textarea = document.createElement('textarea');
     textarea.className = 'comment-input';
-    textarea.placeholder = 'Adicione um comentário sobre este cacto...';
+    textarea.placeholder = 'Escreva seu comentário...';
     textarea.maxLength = 500;
 
     const charCount = document.createElement('div');
@@ -760,77 +856,81 @@ function showReviewModal(cactusId, species) {
     charCount.textContent = '0/500';
 
     textarea.addEventListener('input', () => {
-        charCount.textContent = `${textarea.value.length}/500`;
+        const length = textarea.value.length;
+        charCount.textContent = `${length}/500`;
+
+        // Update char count style based on length
+        charCount.classList.remove('warning', 'limit');
+        if (length >= 450) {
+            charCount.classList.add('limit');
+        } else if (length >= 400) {
+            charCount.classList.add('warning');
+        }
     });
+
+    inputWrapper.appendChild(textarea);
+    inputWrapper.appendChild(charCount);
+
+    // Form actions
+    const formActions = document.createElement('div');
+    formActions.className = 'comment-form-actions';
 
     const submitBtn = document.createElement('button');
     submitBtn.type = 'submit';
     submitBtn.className = 'submit-comment-btn';
-    submitBtn.textContent = 'Comentar';
+    submitBtn.textContent = 'Enviar';
 
     commentForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        if (textarea.value.trim()) {
-            cactusMetadata.addComment(cactusId, textarea.value.trim());
+        const text = textarea.value.trim();
 
-            // Remove no-comments message
-            const noComments = commentsList.querySelector('.no-comments');
-            if (noComments) noComments.remove();
+        if (text) {
+            // Add sending state
+            submitBtn.classList.add('sending');
+            submitBtn.textContent = '';
 
-            // Create new comment element
-            const newCommentItem = document.createElement('div');
-            newCommentItem.className = 'comment-item';
+            // Simulate brief delay for UX
+            setTimeout(() => {
+                const newComment = cactusMetadata.addComment(cactusId, text);
+                comments.push(newComment);
 
-            const commentText = document.createElement('p');
-            commentText.className = 'comment-text';
-            commentText.textContent = textarea.value.trim();
+                // Remove no-comments message
+                const noComments = commentsList.querySelector('.no-comments');
+                if (noComments) noComments.remove();
 
-            const commentMeta = document.createElement('div');
-            commentMeta.className = 'comment-meta';
-            commentMeta.innerHTML = '<span class="comment-time">Agora</span>';
+                // Create and add new comment element
+                const commentElement = createCommentElement(newComment, cactusId, commentsList);
+                commentsList.appendChild(commentElement);
 
-            const removeBtn = document.createElement('button');
-            removeBtn.className = 'comment-remove-btn';
-            removeBtn.innerHTML = '×';
+                // Scroll to new comment
+                setTimeout(() => {
+                    commentsList.scrollTop = commentsList.scrollHeight;
+                }, 100);
 
-            const metadata = cactusMetadata.getMetadata(cactusId);
-            const lastComment = metadata.comments[metadata.comments.length - 1];
-
-            removeBtn.addEventListener('click', () => {
-                cactusMetadata.removeComment(cactusId, lastComment.id);
-                newCommentItem.classList.add('removing');
-                setTimeout(() => newCommentItem.remove(), 300);
-
-                if (commentsList.querySelectorAll('.comment-item').length === 0) {
-                    commentsList.innerHTML = '<p class="no-comments">Nenhum comentário ainda. Seja o primeiro! 😊</p>';
-                }
-            });
-
-            commentMeta.appendChild(removeBtn);
-            newCommentItem.appendChild(commentText);
-            newCommentItem.appendChild(commentMeta);
-            commentsList.appendChild(newCommentItem);
-
-            textarea.value = '';
-            charCount.textContent = '0/500';
-            textarea.focus();
+                // Reset form
+                textarea.value = '';
+                charCount.textContent = '0/500';
+                charCount.classList.remove('warning', 'limit');
+                submitBtn.classList.remove('sending');
+                submitBtn.textContent = 'Enviar';
+                textarea.focus();
+            }, 200);
         }
     });
 
-    commentForm.appendChild(textarea);
-    commentForm.appendChild(charCount);
-    commentForm.appendChild(submitBtn);
-
+    formActions.appendChild(submitBtn);
+    commentForm.appendChild(inputWrapper);
+    commentForm.appendChild(formActions);
     commentsSection.appendChild(commentForm);
 
     // Assemble modal
-    modal.appendChild(header);
-    modal.appendChild(ratingSection);
-    modal.appendChild(commentsSection);
-
+    contentWrapper.appendChild(header);
+    contentWrapper.appendChild(ratingSection);
+    contentWrapper.appendChild(commentsSection);
+    modal.appendChild(contentWrapper);
     overlay.appendChild(modal);
 
-    // Close on overlay click
+    // Close on overlay click (but not on modal)
     overlay.addEventListener('click', (e) => {
         if (e.target === overlay) {
             overlay.classList.add('closing');
@@ -848,7 +948,47 @@ function showReviewModal(cactusId, species) {
     };
     document.addEventListener('keydown', handleEscape);
 
+    // Prevent body scroll when modal is open
+    document.body.style.overflow = 'hidden';
+
+    // Re-enable scroll when modal closes
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            if (mutation.removedNodes) {
+                mutation.removedNodes.forEach((node) => {
+                    if (node === overlay) {
+                        document.body.style.overflow = '';
+                        observer.disconnect();
+                    }
+                });
+            }
+        });
+    });
+    observer.observe(document.body, { childList: true });
+
     document.body.appendChild(overlay);
+
+    // Focus textarea after modal opens
+    setTimeout(() => textarea.focus(), 400);
+}
+
+// Helper function to update card rating indicator
+function updateCardRating(cactusId, rating) {
+    const card = document.querySelector(`.cactus-card[data-id="${cactusId}"]`);
+    if (card) {
+        let indicator = card.querySelector('.rating-indicator');
+        if (!indicator) {
+            indicator = document.createElement('div');
+            indicator.className = 'rating-indicator';
+            card.appendChild(indicator);
+        }
+
+        if (rating > 0) {
+            indicator.innerHTML = `<span class="rating-stars">${'★'.repeat(rating)}</span>`;
+        } else {
+            indicator.innerHTML = '';
+        }
+    }
 }
 
 // ============================================

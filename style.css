@@ -937,354 +937,748 @@ body.celebrate {
 }
 
 /* ============================================
-   CACTUS REVIEW MODAL
+   CACTUS REVIEW MODAL - Premium Redesign
+   Using frontend-design skill principles:
+   - Glassmorphism with layered depth
+   - Organic shapes and soft gradients
+   - Micro-interactions and smooth animations
+   - Mobile-first responsive design
    ============================================ */
 
+/* Modal Overlay - Frosted glass effect */
 .review-modal-overlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(4px);
+    inset: 0;
+    background: linear-gradient(
+        135deg,
+        rgba(15, 23, 42, 0.85) 0%,
+        rgba(30, 41, 59, 0.9) 100%
+    );
+    backdrop-filter: blur(12px) saturate(180%);
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     justify-content: center;
-    z-index: 1000;
+    z-index: 10000;
+    padding: 0;
     opacity: 1;
-    animation: fadeIn var(--transition-base) ease;
-    padding: var(--space-md);
+    animation: modalOverlayIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Mobile: bottom sheet style */
+@media (min-width: 640px) {
+    .review-modal-overlay {
+        align-items: center;
+        padding: var(--space-lg);
+    }
 }
 
 .review-modal-overlay.closing {
-    animation: fadeOut var(--transition-base) ease;
-    opacity: 0;
+    animation: modalOverlayOut 0.25s ease-out forwards;
 }
 
-@keyframes fadeIn {
+@keyframes modalOverlayIn {
     from {
         opacity: 0;
+        backdrop-filter: blur(0);
     }
     to {
         opacity: 1;
+        backdrop-filter: blur(12px) saturate(180%);
     }
 }
 
-@keyframes fadeOut {
-    from {
-        opacity: 1;
-    }
+@keyframes modalOverlayOut {
     to {
         opacity: 0;
+        backdrop-filter: blur(0);
     }
 }
 
+/* Modal Container - Card with depth */
 .review-modal {
-    background: linear-gradient(135deg, var(--night) 0%, var(--night-soft) 100%);
-    border: 1px solid rgba(34, 197, 94, 0.2);
-    border-radius: var(--radius-xl);
-    padding: var(--space-2xl);
-    max-width: 500px;
-    width: 100%;
-    max-height: 90vh;
-    overflow-y: auto;
-    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
-    animation: slideUp var(--transition-slow) ease;
     position: relative;
+    width: 100%;
+    max-width: 480px;
+    max-height: 90vh;
+    max-height: 90dvh; /* Dynamic viewport height for mobile */
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+
+    /* Layered background */
+    background:
+        linear-gradient(
+            180deg,
+            rgba(34, 197, 94, 0.03) 0%,
+            transparent 40%
+        ),
+        linear-gradient(
+            135deg,
+            rgba(30, 41, 59, 0.98) 0%,
+            rgba(15, 23, 42, 0.99) 100%
+        );
+
+    /* Soft border glow */
+    border: 1px solid rgba(34, 197, 94, 0.15);
+    border-bottom: none;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+
+    /* Elevated shadow */
+    box-shadow:
+        0 -8px 40px rgba(0, 0, 0, 0.3),
+        0 -2px 20px rgba(34, 197, 94, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+
+    /* Slide up animation (bottom sheet) */
+    animation: modalSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@keyframes slideUp {
+@media (min-width: 640px) {
+    .review-modal {
+        border-radius: var(--radius-xl);
+        border-bottom: 1px solid rgba(34, 197, 94, 0.15);
+        max-height: 85vh;
+        animation: modalScaleIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        box-shadow:
+            0 25px 80px rgba(0, 0, 0, 0.4),
+            0 10px 40px rgba(34, 197, 94, 0.15),
+            inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    }
+}
+
+@keyframes modalSlideUp {
     from {
-        transform: translateY(30px);
         opacity: 0;
+        transform: translateY(100%);
     }
     to {
-        transform: translateY(0);
         opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes modalScaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9) translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
     }
 }
 
 .review-modal-overlay.closing .review-modal {
-    animation: slideDown var(--transition-base) ease;
+    animation: modalSlideDown 0.25s ease-out forwards;
 }
 
-@keyframes slideDown {
-    from {
-        transform: translateY(0);
-        opacity: 1;
+@media (min-width: 640px) {
+    .review-modal-overlay.closing .review-modal {
+        animation: modalScaleOut 0.2s ease-out forwards;
     }
+}
+
+@keyframes modalSlideDown {
     to {
-        transform: translateY(30px);
         opacity: 0;
+        transform: translateY(100%);
     }
 }
 
-/* Modal Header */
-.modal-header {
-    margin-bottom: var(--space-2xl);
-    position: relative;
-    padding-right: var(--space-lg);
+@keyframes modalScaleOut {
+    to {
+        opacity: 0;
+        transform: scale(0.95) translateY(10px);
+    }
 }
 
-.modal-header h2 {
-    font-family: var(--font-display);
-    font-size: 1.8rem;
-    color: var(--cactus);
-    margin-bottom: var(--space-sm);
-}
-
-.modal-subtitle {
-    font-size: 0.9rem;
-    color: var(--gray-600);
-    font-style: italic;
-}
-
-.modal-close-btn {
+/* Drag handle for mobile (bottom sheet indicator) */
+.review-modal::before {
+    content: '';
     position: absolute;
-    top: -10px;
-    right: 0;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
     width: 36px;
-    height: 36px;
-    border: none;
-    background: rgba(34, 197, 94, 0.1);
-    color: var(--cactus);
-    font-size: 1.5rem;
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: all var(--transition-fast) ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius-full);
+    z-index: 10;
 }
 
-.modal-close-btn:hover {
-    background: rgba(34, 197, 94, 0.2);
-    transform: scale(1.1);
+@media (min-width: 640px) {
+    .review-modal::before {
+        display: none;
+    }
 }
 
-/* Rating Section */
-.rating-section {
-    margin-bottom: var(--space-2xl);
-}
-
-.rating-section h3,
-.comments-section h3 {
-    font-family: var(--font-display);
-    font-size: 1.3rem;
-    margin-bottom: var(--space-lg);
-    color: var(--white);
-}
-
-.stars-container {
-    display: flex;
-    gap: var(--space-md);
-    justify-content: center;
-}
-
-.star-btn {
-    width: 48px;
-    height: 48px;
-    border: 2px solid rgba(34, 197, 94, 0.3);
-    background: transparent;
-    color: var(--sand);
-    font-size: 2rem;
-    cursor: pointer;
-    border-radius: var(--radius-sm);
-    transition: all var(--transition-fast) ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.star-btn:hover {
-    border-color: var(--cactus);
-    background: rgba(34, 197, 94, 0.1);
-    transform: scale(1.1);
-}
-
-.star-btn.active {
-    color: var(--sand-dark);
-    border-color: var(--cactus);
-    background: rgba(34, 197, 94, 0.2);
-    box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
-}
-
-/* Comments Section */
-.comments-section {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-lg);
-}
-
-.comments-list {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-md);
-    max-height: 300px;
+/* Modal Content Wrapper */
+.modal-content-wrapper {
+    flex: 1;
     overflow-y: auto;
-    padding-right: var(--space-sm);
+    overflow-x: hidden;
+    padding: var(--space-xl);
+    padding-top: var(--space-2xl);
+    -webkit-overflow-scrolling: touch;
 }
 
-.comments-list::-webkit-scrollbar {
+@media (min-width: 640px) {
+    .modal-content-wrapper {
+        padding: var(--space-2xl);
+    }
+}
+
+/* Custom scrollbar */
+.modal-content-wrapper::-webkit-scrollbar,
+.review-modal::-webkit-scrollbar {
     width: 6px;
 }
 
-.comments-list::-webkit-scrollbar-track {
+.modal-content-wrapper::-webkit-scrollbar-track,
+.review-modal::-webkit-scrollbar-track {
     background: transparent;
 }
 
-.comments-list::-webkit-scrollbar-thumb {
+.modal-content-wrapper::-webkit-scrollbar-thumb,
+.review-modal::-webkit-scrollbar-thumb {
     background: rgba(34, 197, 94, 0.3);
     border-radius: var(--radius-full);
 }
 
-.comments-list::-webkit-scrollbar-thumb:hover {
+.modal-content-wrapper::-webkit-scrollbar-thumb:hover,
+.review-modal::-webkit-scrollbar-thumb:hover {
     background: rgba(34, 197, 94, 0.5);
 }
 
-.comment-item {
-    background: rgba(34, 197, 94, 0.05);
-    border: 1px solid rgba(34, 197, 94, 0.2);
-    border-radius: var(--radius-md);
-    padding: var(--space-md);
-    transition: all var(--transition-fast) ease;
-    animation: slideInComment var(--transition-base) ease;
+/* Modal Header - Hero style */
+.modal-header {
+    position: relative;
+    text-align: center;
+    margin-bottom: var(--space-xl);
+    padding-bottom: var(--space-lg);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-@keyframes slideInComment {
+.modal-header::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--cactus), transparent);
+}
+
+.modal-header h2 {
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--cactus-light), var(--cactus));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: var(--space-xs);
+    line-height: 1.2;
+}
+
+@media (min-width: 640px) {
+    .modal-header h2 {
+        font-size: 1.8rem;
+    }
+}
+
+.modal-subtitle {
+    font-size: 0.85rem;
+    color: var(--sand);
+    font-style: italic;
+    opacity: 0.8;
+}
+
+/* Close button - Floating pill */
+.modal-close-btn {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--gray-200);
+    font-size: 1.1rem;
+    font-weight: 300;
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+}
+
+.modal-close-btn:hover {
+    background: rgba(239, 68, 68, 0.2);
+    color: #FCA5A5;
+    transform: rotate(90deg);
+}
+
+.modal-close-btn:active {
+    transform: rotate(90deg) scale(0.95);
+}
+
+/* ============================================
+   RATING SECTION - Interactive Stars
+   ============================================ */
+
+.rating-section {
+    margin-bottom: var(--space-xl);
+}
+
+.rating-section h3,
+.comments-section h3 {
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--gray-200);
+    margin-bottom: var(--space-md);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.rating-section h3::before {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.1), transparent);
+}
+
+.rating-section h3::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1));
+}
+
+/* Stars Container - Centered with glow */
+.stars-container {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-sm);
+    padding: var(--space-md);
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+/* Star Buttons - Organic feel */
+.star-btn {
+    position: relative;
+    width: 44px;
+    height: 44px;
+    border: none;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.2);
+    font-size: 1.8rem;
+    cursor: pointer;
+    border-radius: var(--radius-md);
+    transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    /* Touch target for mobile */
+    -webkit-tap-highlight-color: transparent;
+}
+
+.star-btn::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: inherit;
+    background: radial-gradient(circle, rgba(253, 230, 138, 0.2) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.star-btn:hover {
+    color: var(--sand);
+    transform: scale(1.15) translateY(-2px);
+}
+
+.star-btn:hover::before {
+    opacity: 1;
+}
+
+.star-btn:active {
+    transform: scale(1.05);
+}
+
+.star-btn.active {
+    color: var(--sand-dark);
+    text-shadow:
+        0 0 20px rgba(253, 230, 138, 0.5),
+        0 0 40px rgba(253, 230, 138, 0.3);
+    animation: starPop 0.3s ease;
+}
+
+.star-btn.active::before {
+    opacity: 1;
+    background: radial-gradient(circle, rgba(253, 230, 138, 0.3) 0%, transparent 70%);
+}
+
+@keyframes starPop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.3); }
+    100% { transform: scale(1.15); }
+}
+
+/* Rating feedback text */
+.rating-feedback {
+    text-align: center;
+    margin-top: var(--space-md);
+    font-size: 0.85rem;
+    color: var(--sand);
+    opacity: 0;
+    transform: translateY(-5px);
+    transition: all 0.3s ease;
+}
+
+.rating-feedback.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* ============================================
+   COMMENTS SECTION - Chat-like design
+   ============================================ */
+
+.comments-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.comments-section h3 {
+    margin-bottom: var(--space-sm);
+}
+
+/* Comments List - Scrollable area */
+.comments-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    max-height: 200px;
+    overflow-y: auto;
+    padding: var(--space-sm);
+    margin: 0 calc(-1 * var(--space-sm));
+    scroll-behavior: smooth;
+}
+
+/* Comment scrollbar styling */
+.comments-list::-webkit-scrollbar {
+    width: 4px;
+}
+
+.comments-list::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: var(--radius-full);
+}
+
+.comments-list::-webkit-scrollbar-thumb {
+    background: rgba(34, 197, 94, 0.2);
+    border-radius: var(--radius-full);
+}
+
+.comments-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(34, 197, 94, 0.4);
+}
+
+/* Comment Item - Chat bubble style */
+.comment-item {
+    position: relative;
+    background: linear-gradient(
+        135deg,
+        rgba(34, 197, 94, 0.08) 0%,
+        rgba(34, 197, 94, 0.03) 100%
+    );
+    border: 1px solid rgba(34, 197, 94, 0.12);
+    border-radius: var(--radius-lg);
+    border-bottom-left-radius: var(--radius-sm);
+    padding: var(--space-md);
+    transition: all 0.2s ease;
+    animation: commentSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.comment-item::before {
+    content: '';
+    position: absolute;
+    left: -6px;
+    bottom: 8px;
+    width: 12px;
+    height: 12px;
+    background: inherit;
+    border: inherit;
+    border-right: none;
+    border-top: none;
+    transform: rotate(45deg);
+    clip-path: polygon(0 100%, 0 0, 100% 100%);
+}
+
+@keyframes commentSlideIn {
     from {
-        transform: translateX(-20px);
         opacity: 0;
+        transform: translateY(10px) scale(0.95);
     }
     to {
-        transform: translateX(0);
         opacity: 1;
+        transform: translateY(0) scale(1);
     }
 }
 
 .comment-item.removing {
-    animation: slideOutComment var(--transition-base) ease forwards;
+    animation: commentSlideOut 0.25s ease forwards;
 }
 
-@keyframes slideOutComment {
+@keyframes commentSlideOut {
     to {
-        transform: translateX(-20px);
         opacity: 0;
+        transform: translateX(-20px) scale(0.95);
     }
 }
 
 .comment-item:hover {
-    background: rgba(34, 197, 94, 0.1);
-    border-color: rgba(34, 197, 94, 0.4);
+    background: linear-gradient(
+        135deg,
+        rgba(34, 197, 94, 0.12) 0%,
+        rgba(34, 197, 94, 0.06) 100%
+    );
+    border-color: rgba(34, 197, 94, 0.25);
+    transform: translateX(4px);
 }
 
+/* Comment Text */
 .comment-text {
     color: var(--white);
-    font-size: 0.95rem;
-    line-height: 1.4;
+    font-size: 0.9rem;
+    line-height: 1.5;
     margin-bottom: var(--space-sm);
     word-break: break-word;
 }
 
+/* Comment Meta - Time and actions */
 .comment-meta {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 0.8rem;
-    color: var(--gray-600);
+    padding-top: var(--space-xs);
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
 }
 
 .comment-time {
-    display: block;
+    font-size: 0.7rem;
+    color: var(--gray-200);
+    opacity: 0.5;
+    font-weight: 500;
 }
 
+/* Comment Remove Button - Subtle */
 .comment-remove-btn {
     background: transparent;
     border: none;
-    color: var(--sunset-pink);
+    color: rgba(255, 255, 255, 0.3);
     cursor: pointer;
-    font-size: 1.2rem;
+    font-size: 1rem;
     padding: 0;
     width: 24px;
     height: 24px;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all var(--transition-fast) ease;
+    border-radius: var(--radius-full);
+    transition: all 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .comment-remove-btn:hover {
-    transform: scale(1.2);
-    color: var(--sunset-orange);
+    background: rgba(239, 68, 68, 0.15);
+    color: #FCA5A5;
+    transform: scale(1.1);
 }
 
+.comment-remove-btn:active {
+    transform: scale(0.95);
+}
+
+/* Empty Comments State */
 .no-comments {
     text-align: center;
-    color: var(--gray-600);
-    padding: var(--space-lg);
-    font-size: 0.9rem;
-    font-style: italic;
+    color: var(--gray-200);
+    padding: var(--space-xl);
+    font-size: 0.85rem;
+    opacity: 0.6;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-sm);
 }
 
-/* Comment Form */
+.no-comments::before {
+    content: '💬';
+    font-size: 2rem;
+    opacity: 0.5;
+}
+
+/* ============================================
+   COMMENT FORM - Modern Input
+   ============================================ */
+
 .comment-form {
     display: flex;
     flex-direction: column;
-    gap: var(--space-md);
+    gap: var(--space-sm);
+    padding-top: var(--space-md);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Input wrapper for floating label effect */
+.comment-input-wrapper {
+    position: relative;
 }
 
 .comment-input {
     width: 100%;
-    min-height: 80px;
+    min-height: 70px;
+    max-height: 120px;
     padding: var(--space-md);
-    border: 1px solid rgba(34, 197, 94, 0.3);
-    border-radius: var(--radius-md);
-    background: rgba(34, 197, 94, 0.05);
+    padding-bottom: var(--space-xl);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-lg);
+    background: rgba(0, 0, 0, 0.2);
     color: var(--white);
     font-family: var(--font-body);
-    font-size: 0.95rem;
-    resize: vertical;
-    transition: all var(--transition-fast) ease;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    resize: none;
+    transition: all 0.2s ease;
+    -webkit-appearance: none;
 }
 
 .comment-input:focus {
     outline: none;
-    border-color: var(--cactus);
-    background: rgba(34, 197, 94, 0.1);
-    box-shadow: 0 0 20px rgba(34, 197, 94, 0.2);
+    border-color: rgba(34, 197, 94, 0.4);
+    background: rgba(0, 0, 0, 0.3);
+    box-shadow:
+        0 0 0 3px rgba(34, 197, 94, 0.1),
+        inset 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .comment-input::placeholder {
-    color: var(--gray-600);
+    color: rgba(255, 255, 255, 0.3);
 }
 
+/* Character count - Floating inside input */
 .char-count {
-    font-size: 0.75rem;
-    color: var(--gray-600);
-    text-align: right;
+    position: absolute;
+    bottom: var(--space-sm);
+    right: var(--space-md);
+    font-size: 0.65rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.25);
+    transition: color 0.2s ease;
 }
 
+.char-count.warning {
+    color: var(--sunset-orange);
+}
+
+.char-count.limit {
+    color: #EF4444;
+}
+
+/* Form Actions Row */
+.comment-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-sm);
+}
+
+/* Submit Button - Pill style */
 .submit-comment-btn {
-    padding: var(--space-md) var(--space-lg);
+    position: relative;
+    padding: var(--space-sm) var(--space-lg);
     border: none;
-    background: linear-gradient(135deg, var(--cactus), var(--cactus-dark));
+    background: linear-gradient(
+        135deg,
+        var(--cactus) 0%,
+        var(--cactus-dark) 100%
+    );
     color: var(--white);
     font-family: var(--font-body);
     font-weight: 600;
-    border-radius: var(--radius-md);
+    font-size: 0.85rem;
+    border-radius: var(--radius-full);
     cursor: pointer;
-    transition: all var(--transition-fast) ease;
-    font-size: 0.95rem;
+    transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.submit-comment-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.15) 0%,
+        transparent 50%
+    );
+    opacity: 0;
+    transition: opacity 0.2s ease;
 }
 
 .submit-comment-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(34, 197, 94, 0.3);
+    transform: translateY(-2px) scale(1.02);
+    box-shadow:
+        0 8px 24px rgba(34, 197, 94, 0.35),
+        0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.submit-comment-btn:hover::before {
+    opacity: 1;
 }
 
 .submit-comment-btn:active {
-    transform: translateY(0);
+    transform: translateY(0) scale(0.98);
+}
+
+.submit-comment-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Sending state animation */
+.submit-comment-btn.sending {
+    pointer-events: none;
+}
+
+.submit-comment-btn.sending::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border: 2px solid transparent;
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
 }
 
 /* Rating Indicator on Card */
